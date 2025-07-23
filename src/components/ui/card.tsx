@@ -1,3 +1,4 @@
+// Component ini menggunakan component dari shadcn pakai cli jadi tidak di ubah sama sekali
 import * as React from "react"
 
 import { cn } from "@/lib/utils"

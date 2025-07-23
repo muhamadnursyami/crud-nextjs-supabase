@@ -1,3 +1,4 @@
+// DB ini dibuat manual, setelah membuat db selanjutnya membuat types untuk dbnya karena ini adala typescript
 import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL  as string;
