@@ -1,15 +1,21 @@
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuGroup, DropdownMenuItem, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
 import supabase from "@/lib/db";
 import { IMenu } from "@/types/menu";
 import { Ellipsis } from "lucide-react";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
+import { toast } from "sonner";
 
 const AdminPage = () => {
     const [menus, setMenus] = useState<IMenu[]>([]);
-
+    const [createDialog, setCreateDialog] = useState(false);
     useEffect(()=>{
         const fetchMenu = async () =>{
             const {data, error} = await supabase.from('menus').select('*');
@@ -18,14 +24,96 @@ const AdminPage = () => {
         }
         fetchMenu();
     },[supabase])
-    console.log(menus);
+   
+    // parameter yang di kirim adalah sebuah e yang merupaka type dari FORMEVENT yang di ambil dari react
+    const handleSubmit = async(e:FormEvent<HTMLFormElement>)=>{
+        e.preventDefault();
+        // mengambil semua data form yang dikirim kan dari e current target.
+        const formData= new FormData(e.currentTarget);
+        
+        try {
+            // object data dan error ini adalah template dari sana nya untuk supabase jadi ikutin aja
+            const {data, error} = await supabase.from('menus').insert(Object.fromEntries(formData)).select();
+            
+            if(error) console.log('error', error);
+            else{
+                if(data) {
+                // jika ada datanya yang di kembalikan dari hasil insert, maka data tesebut
+                // akan di masukan kedalam state menus, agar diperbaharui data sebelumnya dengan data yang baru diinsertkan
+                // jadi tidak perlu fetch terus menerus.
+                // menus sebelumnya ditambahain dengan data menus terbaru ditampilkan dari supabase
+                    setMenus((prev)=> [...prev, ...data]);
+                }
+                toast('Menu add successfull');
+                setCreateDialog(false);
+            }
+        } catch (error) {
+            console.log('error', error);
+            
+        }
+    }
     return (
         <div className="container mx-auto py-8">
             <div className="mb-4 w-full flex justify-between">
                 <div className="text-3xl font-bold">
                 Menu
                 </div>
-                    <Button className="font-bold">Add Menu</Button>
+                <Dialog open={createDialog} onOpenChange={setCreateDialog}>
+                    <DialogTrigger asChild>
+                        <Button className="font-bold">Add Menu</Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-md">
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <DialogHeader>
+                                <DialogTitle>Add Menu</DialogTitle>
+                                <DialogDescription>Create a new manu by insert data in this form</DialogDescription>
+                            </DialogHeader>
+                            <div className="grid  w-full gap-4">
+                                <div className="grid w-full gap-1.5">
+                                    <Label htmlFor="name">Name</Label>
+                                    <Input id="name" name="name" placeholder="Please input your name.." required/>
+                                </div>
+                                <div className="grid w-full gap-1.5">
+                                    <Label htmlFor="price">Price</Label>
+                                    <Input id="price" name="price" placeholder="Please input your price.." required/>
+                                </div>
+                                <div className="grid w-full gap-1.5">
+                                    <Label htmlFor="image">Image</Label>
+                                    <Input id="image" name="image" placeholder="Please input your image url.." required/>
+                                </div>
+                                <div className="grid w-full gap-1.5">
+                                    <Label htmlFor="category">Category</Label>
+                                    <Select name="category" required>
+                                        <SelectTrigger className="w-full">
+                                            <SelectValue placeholder="Select Category"/>
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectGroup>
+                                                <SelectLabel>Category</SelectLabel>
+                                                <SelectItem value="Coffee">Coffee</SelectItem>
+                                                <SelectItem value="Non Coffee">Non Coffee</SelectItem>
+                                                <SelectItem value="Pastries">Pastries</SelectItem>
+                                            </SelectGroup>
+                                        </SelectContent>    
+                                    </Select>
+                                </div>
+                                  <div className="grid w-full gap-1.5">
+                                    <Label htmlFor="description">Description</Label>
+                                    <Textarea className="resize-none h-32" id="description" name="description" placeholder="Please input your description.." required/>
+                                </div>
+                            </div>
+                        <DialogFooter>
+                            <DialogClose>
+                                <Button variant={'secondary'} className="cursor-pointer"> Cancel</Button>
+                            </DialogClose>
+                            <Button type="submit">
+                                Create
+                            </Button>
+                        </DialogFooter>
+                        </form>
+                        
+                    </DialogContent>
+                </Dialog>
             </div>
             <Table>
                 <TableHeader>
