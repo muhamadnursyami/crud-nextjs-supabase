@@ -16,6 +16,10 @@ import { toast } from "sonner";
 const AdminPage = () => {
     const [menus, setMenus] = useState<IMenu[]>([]);
     const [createDialog, setCreateDialog] = useState(false);
+    const [selectedMenu, setSelectedMenu] = useState<{
+        menu:IMenu;
+        action: 'edit' | 'delete';
+    } | null>(null);
     useEffect(()=>{
         const fetchMenu = async () =>{
             const {data, error} = await supabase.from('menus').select('*');
@@ -52,6 +56,23 @@ const AdminPage = () => {
             
         }
     }
+
+
+    const handleDeleteMenu = async() =>{
+        try {
+            const  {data, error} = await supabase.from('menus').delete().eq('id', selectedMenu?.menu.id);
+            if(error) console.log(error);
+            else{
+                setMenus((prev)=> prev.filter((menu) => menu.id !== selectedMenu?.menu.id));
+                toast('Menu deleted successfully');
+                setSelectedMenu(null);
+                console.log(data);
+            }
+        } catch (error) {
+            console.log(error);
+        }
+    }
+
     return (
         <div className="container mx-auto py-8">
             <div className="mb-4 w-full flex justify-between">
@@ -115,53 +136,76 @@ const AdminPage = () => {
                     </DialogContent>
                 </Dialog>
             </div>
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead className="text-gray-700">Product:</TableHead>
-                        <TableHead className="text-gray-700">Price:</TableHead>
-                        <TableHead className="text-gray-700">Category:</TableHead>
-                        <TableHead className="text-gray-700">Description:</TableHead>
-                        <TableHead className="text-gray-700">Action</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {menus.map((menu:IMenu)=>(
-                        <TableRow key={menu.id}>
-                            <TableCell className="flex items-center gap-2 w-full">
-                                <Image width={50} height={50} src={menu.image} alt={menu.name} className="aspect-square object-cover rounded-lg"/>
-                                {menu.name}
-                            </TableCell>
-                            <TableCell>
-                                {menu.description.split(' ').slice(0,5).join(' ') +'...' }
-                            </TableCell>
-                            <TableCell>
-                                {menu.category}
-                            </TableCell>
-                            <TableCell>
-                                ${menu.price}.00
-                            </TableCell>
-                            <TableCell>
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild className="cursor-pointer">
-                                        <Ellipsis/>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent className="w-56">
-                                        <DropdownMenuLabel className="font-bold mb-1">
-                                            Action
-                                        </DropdownMenuLabel>
-                                        <DropdownMenuSeparator/>
-                                        <DropdownMenuGroup>
-                                            <DropdownMenuItem>Edit</DropdownMenuItem>
-                                            <DropdownMenuItem className="text-red-300">Delete</DropdownMenuItem>
-                                        </DropdownMenuGroup>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            </TableCell>
+            <div>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead className="text-gray-700">Product:</TableHead>
+                            <TableHead className="text-gray-700">Price:</TableHead>
+                            <TableHead className="text-gray-700">Category:</TableHead>
+                            <TableHead className="text-gray-700">Description:</TableHead>
+                            <TableHead className="text-gray-700">Action</TableHead>
                         </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
+                    </TableHeader>
+                    <TableBody>
+                        {menus.map((menu:IMenu)=>(
+                            <TableRow key={menu.id}>
+                                <TableCell className="flex items-center gap-2 w-full">
+                                    <Image width={50} height={50} src={menu.image} alt={menu.name} className="aspect-square object-cover rounded-lg"/>
+                                    {menu.name}
+                                </TableCell>
+                                <TableCell>
+                                    {menu.description.split(' ').slice(0,5).join(' ') +'...' }
+                                </TableCell>
+                                <TableCell>
+                                    {menu.category}
+                                </TableCell>
+                                <TableCell>
+                                    ${menu.price}.00
+                                </TableCell>
+                                <TableCell>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild className="cursor-pointer">
+                                            <Ellipsis/>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent className="w-56">
+                                            <DropdownMenuLabel className="font-bold mb-1">
+                                                Action
+                                            </DropdownMenuLabel>
+                                            <DropdownMenuSeparator/>
+                                            <DropdownMenuGroup>
+                                                <DropdownMenuItem>Edit</DropdownMenuItem>
+                                                <DropdownMenuItem onClick={()=> setSelectedMenu({menu, action:'delete'})} className="text-red-300">Delete</DropdownMenuItem>
+                                            </DropdownMenuGroup>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </div>
+            <Dialog open={selectedMenu !== null && selectedMenu.action === 'delete'} onOpenChange={(open)=>{
+                if (!open) {
+                    setSelectedMenu(null);
+                }
+            }}>
+                    <DialogContent className="sm:max-w-md">
+                            <DialogHeader>
+                                <DialogTitle>Delete menu</DialogTitle>
+                                <DialogDescription>Are you sure want to delete {selectedMenu?.menu.image}</DialogDescription>
+                            </DialogHeader>
+                        <DialogFooter>
+                            <DialogClose>
+                                <Button variant={'secondary'} className="cursor-pointer"> Cancel</Button>
+                            </DialogClose>
+                            <Button onClick={handleDeleteMenu} variant={'destructive'} className="cursor-pointer">
+                                Delete
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+           
         </div>
     )
 }
