@@ -13,6 +13,7 @@ import Image from "next/image";
 import { FormEvent, useEffect, useState } from "react";
 import { toast } from "sonner";
 
+
 const AdminPage = () => {
     const [menus, setMenus] = useState<IMenu[]>([]);
     const [createDialog, setCreateDialog] = useState(false);
@@ -73,12 +74,34 @@ const AdminPage = () => {
         }
     }
 
+    const handleEditMenu = async (e: FormEvent<HTMLFormElement>) =>{
+        e.preventDefault();
+        const formData = new FormData(e.currentTarget);
+        const newData = Object.fromEntries(formData);
+        try {
+            const {error} = await supabase.from('menus').update(newData).eq('id', selectedMenu?.menu.id);
+            if(error) console.log(error);
+            else{
+               setMenus((prev)=>
+                prev.map((menu) =>
+                menu.id === selectedMenu?.menu.id ? {...menu, ...newData} : menu
+                ),
+            );
+            toast('Menu edit successfully')
+            setSelectedMenu(null);
+            }
+        } catch (error) {
+            console.log(error);
+        }
+    }
+
     return (
         <div className="container mx-auto py-8">
             <div className="mb-4 w-full flex justify-between">
                 <div className="text-3xl font-bold">
                 Menu
                 </div>
+                {/* CREATE */}
                 <Dialog open={createDialog} onOpenChange={setCreateDialog}>
                     <DialogTrigger asChild>
                         <Button className="font-bold">Add Menu</Button>
@@ -125,7 +148,7 @@ const AdminPage = () => {
                             </div>
                         <DialogFooter>
                             <DialogClose>
-                                <Button variant={'secondary'} className="cursor-pointer"> Cancel</Button>
+                                <Button type="button" variant={'secondary'} className="cursor-pointer"> Cancel</Button>
                             </DialogClose>
                             <Button type="submit">
                                 Create
@@ -136,6 +159,7 @@ const AdminPage = () => {
                     </DialogContent>
                 </Dialog>
             </div>
+            {/* SHOW DATA */}
             <div>
                 <Table>
                     <TableHeader>
@@ -174,7 +198,7 @@ const AdminPage = () => {
                                             </DropdownMenuLabel>
                                             <DropdownMenuSeparator/>
                                             <DropdownMenuGroup>
-                                                <DropdownMenuItem>Edit</DropdownMenuItem>
+                                                <DropdownMenuItem onClick={()=> setSelectedMenu({menu, action:'edit'})}>Edit</DropdownMenuItem>
                                                 <DropdownMenuItem onClick={()=> setSelectedMenu({menu, action:'delete'})} className="text-red-300">Delete</DropdownMenuItem>
                                             </DropdownMenuGroup>
                                         </DropdownMenuContent>
@@ -185,6 +209,7 @@ const AdminPage = () => {
                     </TableBody>
                 </Table>
             </div>
+            {/* DELETE */}
             <Dialog open={selectedMenu !== null && selectedMenu.action === 'delete'} onOpenChange={(open)=>{
                 if (!open) {
                     setSelectedMenu(null);
@@ -204,8 +229,66 @@ const AdminPage = () => {
                             </Button>
                         </DialogFooter>
                     </DialogContent>
+            </Dialog>
+            {/* EDIT */}
+           <Dialog open={selectedMenu !== null && selectedMenu.action === 'edit'} onOpenChange={(open)=>{
+                if (!open) {
+                    setSelectedMenu(null);
+                }
+            }}>
+                    
+                    <DialogContent className="sm:max-w-md">
+                        <form onSubmit={handleEditMenu} className="space-y-4">
+                            <DialogHeader>
+                                <DialogTitle>Edit Menu</DialogTitle>
+                                <DialogDescription>Edit Your data menu</DialogDescription>
+                            </DialogHeader>
+                            <div className="grid  w-full gap-4">
+                                <div className="grid w-full gap-1.5">
+                                    <Label htmlFor="name">Name</Label>
+                                    <Input id="name" defaultValue={selectedMenu?.menu.name} name="name" placeholder="Please input your name.." required/>
+                                </div>
+                                <div className="grid w-full gap-1.5">
+                                    <Label htmlFor="price">Price</Label>
+                                    <Input id="price" defaultValue={selectedMenu?.menu.price} name="price" placeholder="Please input your price.." required/>
+                                </div>
+                                <div className="grid w-full gap-1.5">
+                                    <Label htmlFor="image">Image</Label>
+                                    <Input id="image" defaultValue={selectedMenu?.menu.image} name="image" placeholder="Please input your image url.." required/>
+                                </div>
+                                <div className="grid w-full gap-1.5">
+                                    <Label htmlFor="category">Category</Label>
+                                    <Select name="category" required defaultValue={selectedMenu?.menu.category}>
+                                        <SelectTrigger className="w-full">
+                                            <SelectValue placeholder="Select Category"/>
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectGroup>
+                                                <SelectLabel>Category</SelectLabel>
+                                                <SelectItem value="Coffee">Coffee</SelectItem>
+                                                <SelectItem value="Non Coffee">Non Coffee</SelectItem>
+                                                <SelectItem value="Pastries">Pastries</SelectItem>
+                                            </SelectGroup>
+                                        </SelectContent>    
+                                    </Select>
+                                </div>
+                                  <div className="grid w-full gap-1.5">
+                                    <Label htmlFor="description">Description</Label>
+                                    <Textarea defaultValue={selectedMenu?.menu.description} className="resize-none h-32" id="description" name="description" placeholder="Please input your description.." required/>
+                                </div>
+                            </div>
+                        <DialogFooter>
+                            <DialogClose>
+                                <Button type="button" variant={'secondary'} className="cursor-pointer"> Cancel</Button>
+                            </DialogClose>
+                            <Button type="submit">
+                                Edit
+                            </Button>
+                        </DialogFooter>
+                        </form>
+                        
+                    </DialogContent>
                 </Dialog>
-           
         </div>
     )
 }
